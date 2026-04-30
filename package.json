@@ -1,0 +1,36 @@
+{
+  "name": "hono-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "keywords": [],
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "serve": "bun src/server.ts",
+    "build": "bun build ./src/server.ts --outdir ./dist --target=bun --external sharp",
+    "start": "bun ./dist/server.js",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit",
+    "db:generate": "bunx drizzle-kit generate",
+    "db:migrate": "bun scripts/migrate.ts",
+    "db:seed": "bun scripts/seed-roles.ts",
+    "db:seed:users": "bun scripts/seed-users.ts",
+    "db:repair-auth-baseline": "bun scripts/repair-auth-baseline.ts",
+    "db:push": "bunx drizzle-kit push",
+    "db:studio": "bunx drizzle-kit studio"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@scalar/hono-api-reference": "^0.10.12",
+    "hono": "^4.12.16",
+    "hono-openapi": "^1.3.0",
+    "pino": "^10.3.1",
+    "zod": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "typescript": "^6.0.3"
+  }
+}
