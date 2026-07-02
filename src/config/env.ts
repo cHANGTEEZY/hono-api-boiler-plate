@@ -1,4 +1,37 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { z } from "zod";
+
+function loadEnvFiles() {
+  for (const file of [".env.local", ".env"]) {
+    const path = resolve(process.cwd(), file);
+    if (!existsSync(path)) continue;
+
+    for (const line of readFileSync(path, "utf8").split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+
+      const eq = trimmed.indexOf("=");
+      if (eq === -1) continue;
+
+      const key = trimmed.slice(0, eq).trim();
+      let value = trimmed.slice(eq + 1).trim();
+
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      if (process.env[key] === undefined) {
+        process.env[key] = value;
+      }
+    }
+  }
+}
+
+loadEnvFiles();
 
 /** Common local SPA ports (Vite default 5173; some setups use 3000). */
 const LOCAL_DEV_ORIGINS = [
@@ -26,6 +59,12 @@ const envSchema = z.object({
     .default("info"),
   CORS_ORIGIN: z.string().default("*"),
   FRONTEND_ORIGIN: z.string(),
+  DATABASE_URL: z.string().min(1),
+  DATABASE_URL_UNPOOLED: z.string().optional(),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  BETTER_AUTH_URL: z.string().default("http://localhost:3000"),
+  ARCJET_KEY: z.string().min(1),
+  ARCJET_ENV: z.enum(["development", "production"]).default("development"),
 });
 
 const raw = envSchema.parse(process.env);

@@ -9,7 +9,7 @@ describe('app', () => {
 
     const body = await res.json()
 
-    expect((body as { status: string }).status).toBe("ok")
+    expect((body as { message: string }).message).toBe("OK")
   })
 
   it('GET /missing returns 404', async () => {

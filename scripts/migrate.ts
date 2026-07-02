@@ -1,6 +1,8 @@
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { defineConfig } from "drizzle-kit";
+import { Pool } from "pg";
 
 function loadEnvFiles() {
   for (const file of [".env.local", ".env"]) {
@@ -33,9 +35,6 @@ function loadEnvFiles() {
 
 loadEnvFiles();
 
-// With `pg` installed, drizzle-kit uses it for CLI. Without `pg`, Neon URLs use
-// `@neondatabase/serverless` and `migrate`/`push` often fail. For Neon, set
-// DATABASE_URL_UNPOOLED (direct / non-pooled) for migrations.
 const migrationUrl =
   process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
 
@@ -45,7 +44,6 @@ if (!migrationUrl) {
   );
 }
 
-/** Neon copy-paste URLs often include `channel_binding=require`; node-pg commonly fails on it. */
 function urlForPgCli(url: string): string {
   try {
     const u = new URL(url);
@@ -56,11 +54,14 @@ function urlForPgCli(url: string): string {
   }
 }
 
-export default defineConfig({
-  schema: ["src/db/schema/index.ts"],
-  out: "./drizzle",
-  dialect: "postgresql",
-  dbCredentials: {
-    url: urlForPgCli(migrationUrl),
-  },
+const pool = new Pool({
+  connectionString: urlForPgCli(migrationUrl),
 });
+
+const db = drizzle(pool);
+
+await migrate(db, { migrationsFolder: "./drizzle" });
+
+await pool.end();
+
+console.log("Migrations applied successfully");
