@@ -22,7 +22,7 @@
     "db:studio": "bun --env-file=.env.local x drizzle-kit studio"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@arcjet/bun": "^1.6.1",
     "@better-auth/drizzle-adapter": "^1.4.0",
