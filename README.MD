@@ -1,15 +1,3 @@
-<p align="center">
-  <img src="https://bun.com/logo.svg" alt="Bun" height="52" />
-  &nbsp;&nbsp;
-  <img src="https://hono.dev/images/logo-small.png" alt="Hono" height="52" />
-  &nbsp;&nbsp;
-  <img src="https://wiki.postgresql.org/images/a/a4/PostgreSQL_logo.3colors.svg" alt="PostgreSQL" height="52" />
-  &nbsp;&nbsp;
-  <img src="https://www.better-auth.com/logo.png" alt="Better Auth" height="52" />
-  &nbsp;&nbsp;
-  <img src="https://arcjet.com/logo.svg" alt="Arcjet" height="52" />
-</p>
-
 <h1 align="center">Hono API Boilerplate</h1>
 
 <p align="center">
