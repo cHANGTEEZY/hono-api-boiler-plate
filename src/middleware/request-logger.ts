@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory";
-import { logger } from "../lib/logger";
-import type { AppVariables } from "../types";
+import { logger } from "../shared/utils/logger";
+import type { AppVariables } from "../shared/types/app.types";
 
 export const requestLogger = () =>
   createMiddleware<{ Variables: AppVariables }>(async (c, next) => {

@@ -111,7 +111,7 @@ The API listens at **http://localhost:3000** by default.
 | Endpoint | Description |
 | --- | --- |
 | `GET /health` | Health check |
-| `GET /api/v1/hello` | Sample API route |
+| `GET /api/v1/users/me` | Current user profile (auth required) |
 | `GET/POST /api/auth/*` | Better Auth handlers |
 | `GET /docs` | Scalar API reference |
 
@@ -142,7 +142,7 @@ See [`.env.example`](.env.example) for a full template.
 
 ## Authentication (Better Auth)
 
-Auth is configured in [`src/auth.ts`](src/auth.ts) with the Drizzle adapter and email/password enabled.
+Auth is configured in [`src/modules/auth/auth.service.ts`](src/modules/auth/auth.service.ts) with the Drizzle adapter and email/password enabled.
 
 ### Auth routes
 
@@ -169,7 +169,7 @@ curl http://localhost:3000/api/auth/get-session \
 Use the `requireAuth()` middleware on routes that need a logged-in user:
 
 ```typescript
-import { requireAuth } from "./middlewares/require-auth";
+import { requireAuth } from "./middleware/require-auth";
 
 router.get("/me", requireAuth(), (c) => {
   return c.json({ user: c.get("user") });
@@ -216,7 +216,7 @@ src/db/
 
 ## Security (Arcjet)
 
-Arcjet is configured in [`src/lib/arcjet.ts`](src/lib/arcjet.ts) and applied per route handler (not global middleware), following Arcjet best practices.
+Arcjet is configured in [`src/shared/utils/arcjet.ts`](src/shared/utils/arcjet.ts) and applied per route handler (not global middleware), following Arcjet best practices.
 
 | Client | Rules | Applied to |
 | --- | --- | --- |
@@ -225,7 +225,7 @@ Arcjet is configured in [`src/lib/arcjet.ts`](src/lib/arcjet.ts) and applied per
 | `ajAuth` | Shield + sliding window (30/min) | `/api/auth/*` |
 | `ajAuthSignup` | Bot block, email validation, rate limit | Sign-up POST |
 
-The Bun server wraps `app.fetch` with `aj.handler()` for accurate client IP detection. Denied requests return structured JSON errors via [`src/lib/arcjet-deny.ts`](src/lib/arcjet-deny.ts).
+The Bun server wraps `app.fetch` with `aj.handler()` for accurate client IP detection. Denied requests return structured JSON errors via [`src/shared/utils/arcjet-deny.ts`](src/shared/utils/arcjet-deny.ts).
 
 ### Get an Arcjet key
 
@@ -245,21 +245,25 @@ Set the key in `.env.local` as `ARCJET_KEY=ajkey_...`.
 ├── scripts/
 │   └── migrate.ts           # Migration runner
 ├── src/
-│   ├── app.ts               # Hono app, middleware, routes
-│   ├── auth.ts              # Better Auth instance
+│   ├── app.ts               # Hono app, middleware, route mounting
 │   ├── server.ts            # Bun.serve entry point
 │   ├── config/
 │   │   └── env.ts           # Zod env validation
+│   ├── docs/
+│   │   └── openapi.ts       # OpenAPI spec registration
 │   ├── db/
 │   │   ├── index.ts         # Drizzle + pg Pool
 │   │   └── schema/          # Drizzle schemas
-│   ├── lib/
-│   │   ├── arcjet.ts        # Arcjet clients
-│   │   ├── arcjet-deny.ts   # Decision → HTTP response
-│   │   ├── cors-merge.ts    # Auth CORS cookie helper
-│   │   └── logger.ts        # Pino logger
-│   ├── middlewares/         # Auth, request ID, logging
-│   └── routes/              # Route modules
+│   ├── middleware/          # Session, auth, request ID, logging
+│   ├── shared/
+│   │   ├── utils/           # Logger, Arcjet, CORS helpers
+│   │   ├── types/           # App context types
+│   │   └── errors/          # HTTP error builders
+│   └── modules/
+│       ├── auth/            # Better Auth module
+│       ├── health/          # Health check module
+│       ├── users/           # Users module
+│       └── v1.routes.ts     # API v1 route aggregator
 ├── test/                    # Bun test suite
 ├── .env.example
 ├── drizzle.config.ts
@@ -305,9 +309,9 @@ Set `CORS_ORIGIN` and `FRONTEND_ORIGIN` to your frontend URL (e.g. `http://local
 
 ### Adding routes
 
-1. Create a route module under `src/routes/`
-2. Mount it in [`src/app.ts`](src/app.ts)
-3. Call `ajApi.protect()` (or another Arcjet client) inside the handler
+1. Create a module under `src/modules/<name>/` (routes, controller, service, docs)
+2. Register routes in [`src/modules/v1.routes.ts`](src/modules/v1.routes.ts) or [`src/app.ts`](src/app.ts)
+3. Call `ajApi.protect()` (or another Arcjet client) in the controller
 4. Use `requireAuth()` for protected endpoints
 
 ---

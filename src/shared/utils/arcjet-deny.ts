@@ -1,7 +1,7 @@
 import type { ArcjetDecision } from "@arcjet/bun";
 import type { Context } from "hono";
+import type { AppVariables } from "../types/app.types";
 import { logger } from "./logger";
-import type { AppVariables } from "../types";
 
 function statusForDecision(decision: ArcjetDecision): 400 | 403 | 429 {
   if (decision.reason.isRateLimit()) return 429;

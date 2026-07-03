@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import type { AppVariables } from "../types";
+import type { AppVariables } from "../shared/types/app.types";
 
 export const requestId = () =>
   createMiddleware<{ Variables: AppVariables }>(async (c, next) => {

@@ -4,21 +4,25 @@ import { compress } from "hono/compress";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
-import { auth } from "./auth";
 import {
   corsCredentialsEnabled,
   env,
   trustedFrontendOrigins,
 } from "./config/env";
-import { mergeCorsIntoAuthResponse } from "./lib/cors-merge";
-import { ajAuth, ajAuthSignup } from "./lib/arcjet";
-import { handleArcjetDecision } from "./lib/arcjet-deny";
-import { logger } from "./lib/logger";
-import { requestLogger } from "./middlewares/request-logger";
-import { requestId } from "./middlewares/request-id";
-import healthRouter from "./routes/health";
-import type { AppVariables } from "./types";
-import { apiV1Router } from "./routes/v1";
+import { registerOpenApiDocs } from "./docs/openapi";
+import { authRoutes } from "./modules/auth/auth.routes";
+import { healthRoutes } from "./modules/health/health.routes";
+import { apiV1Router } from "./modules/v1.routes";
+import { requestLogger } from "./middleware/request-logger";
+import { requestId } from "./middleware/request-id";
+import { sessionMiddleware } from "./middleware/session";
+import {
+  httpExceptionError,
+  internalError,
+  notFoundError,
+} from "./shared/errors/http.error";
+import { logger } from "./shared/utils/logger";
+import type { AppVariables } from "./shared/types/app.types";
 
 export const app = new Hono<{ Variables: AppVariables }>();
 
@@ -42,82 +46,25 @@ app.use("*", secureHeaders());
 app.use("*", requestId());
 app.use("*", requestLogger());
 app.use("*", compress());
+app.use("*", sessionMiddleware);
 
-app.use("*", async (c, next) => {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-
-  if (!session) {
-    c.set("user", null);
-    c.set("session", null);
-    await next();
-    return;
-  }
-
-  c.set("user", session.user);
-  c.set("session", session.session);
-  await next();
-});
-
-app.on(["POST", "GET"], "/api/auth/*", async (c) => {
-  const pathname = new URL(c.req.url).pathname;
-  const isSignup = pathname.includes("/sign-up");
-
-  let decision;
-  if (isSignup && c.req.method === "POST") {
-    let email: string | undefined;
-    try {
-      const body = (await c.req.raw.clone().json()) as { email?: string };
-      email = body.email;
-    } catch {
-      email = undefined;
-    }
-
-    decision = email
-      ? await ajAuthSignup.protect(c.req.raw, {
-          email,
-          correlationId: c.get("requestId"),
-        })
-      : await ajAuth.protect(c.req.raw, {
-          correlationId: c.get("requestId"),
-        });
-  } else {
-    decision = await ajAuth.protect(c.req.raw, {
-      correlationId: c.get("requestId"),
-    });
-  }
-
-  const denied = handleArcjetDecision(c, decision);
-  if (denied) {
-    return mergeCorsIntoAuthResponse(c.req.raw, denied);
-  }
-
-  const res = await auth.handler(c.req.raw);
-  return mergeCorsIntoAuthResponse(c.req.raw, res);
-});
-
-app.route("/health", healthRouter);
+app.route("/api/auth", authRoutes);
+app.route("/health", healthRoutes);
 app.route("/api/v1", apiV1Router);
+
+registerOpenApiDocs(app);
 
 app.get(
   "/docs",
   Scalar({
     url: "/openapi.json",
-    pageTitle: "Heart to Heart API",
+    pageTitle: "Hono API",
   }),
 );
 
 app.notFound((c) => {
-  return c.json(
-    {
-      success: false,
-      error: {
-        code: "NOT_FOUND",
-        message: "Route not found",
-      },
-      requestId: c.get("requestId"),
-    },
-    404,
-  );
+  const { body, status } = notFoundError(c.get("requestId"));
+  return c.json(body, status);
 });
 
 function applyCorsHeadersOnError(
@@ -157,29 +104,13 @@ app.onError((err, c) => {
   );
 
   if (err instanceof HTTPException) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: "HTTP_EXCEPTION",
-          message: err.message,
-        },
-        requestId,
-      },
-      err.status,
-    );
+    const { body } = httpExceptionError(requestId, err.message);
+    return c.json(body, err.status);
   }
 
-  return c.json(
-    {
-      success: false,
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          env.NODE_ENV === "production" ? "Something went wrong" : err.message,
-      },
-      requestId,
-    },
-    500,
+  const { body, status } = internalError(
+    requestId,
+    env.NODE_ENV === "production" ? "Something went wrong" : err.message,
   );
+  return c.json(body, status);
 });

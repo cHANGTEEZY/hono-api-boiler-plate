@@ -2,7 +2,7 @@ import {
   corsCredentialsEnabled,
   env,
   trustedFrontendOrigins,
-} from "../config/env";
+} from "../../config/env";
 
 /**
  * `auth.handler()` returns a fresh `Response`, so global `cors()` headers applied to `c.res`

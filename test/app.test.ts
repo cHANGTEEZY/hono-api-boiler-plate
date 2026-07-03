@@ -12,6 +12,16 @@ describe('app', () => {
     expect((body as { message: string }).message).toBe("OK")
   })
 
+  it('GET /api/v1/health returns ok', async () => {
+    const res = await app.request('/api/v1/health')
+
+    expect(res.status).toBe(200)
+
+    const body = await res.json()
+
+    expect((body as { message: string }).message).toBe("OK")
+  })
+
   it('GET /missing returns 404', async () => {
     const res = await app.request('/missing')
 

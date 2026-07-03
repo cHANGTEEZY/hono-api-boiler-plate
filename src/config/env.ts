@@ -95,12 +95,3 @@ export const trustedFrontendOrigins: string[] = (() => {
 export const corsCredentialsEnabled = normalizeOrigin(raw.CORS_ORIGIN) !== "*";
 
 export const env = raw;
-
-export function getEmailVerificationCallbackUrl(): string {
-  const fromEnv = env.FRONTEND_ORIGIN?.replace(/\/$/, "");
-  if (fromEnv) {
-    return `${fromEnv}/`;
-  }
-  const trust = trustedFrontendOrigins[0];
-  return trust ? `${trust}/` : "http://localhost:5173/";
-}

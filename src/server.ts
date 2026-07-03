@@ -1,17 +1,17 @@
 import { app } from "./app";
-import { aj } from "./lib/arcjet";
+import { aj } from "./shared/utils/arcjet";
 import {
   corsCredentialsEnabled,
   env,
   trustedFrontendOrigins,
 } from "./config/env";
-import { logger } from "./lib/logger";
+import { logger } from "./shared/utils/logger";
 
 const server = Bun.serve({
   fetch: aj.handler(app.fetch),
   hostname: env.HOST,
   port: env.PORT,
-  idleTimeout: 30, //? 30 seconds
+  idleTimeout: 30,
 });
 
 logger.info(

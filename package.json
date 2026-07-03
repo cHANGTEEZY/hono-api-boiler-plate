@@ -12,12 +12,9 @@
     "start": "bun ./dist/server.js",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
-    "auth:generate": "bunx auth@latest generate --config src/auth.ts --output src/db/schema/auth.ts --yes",
+    "auth:generate": "bunx auth@latest generate --config src/modules/auth/auth.service.ts --output src/db/schema/auth.ts --yes",
     "db:generate": "bun --env-file=.env.local x drizzle-kit generate",
     "db:migrate": "bun --env-file=.env.local scripts/migrate.ts",
-    "db:seed": "bun --env-file=.env.local scripts/seed-roles.ts",
-    "db:seed:users": "bun --env-file=.env.local scripts/seed-users.ts",
-    "db:repair-auth-baseline": "bun --env-file=.env.local scripts/repair-auth-baseline.ts",
     "db:push": "bun --env-file=.env.local x drizzle-kit push",
     "db:studio": "bun --env-file=.env.local x drizzle-kit studio"
   },
@@ -26,6 +23,7 @@
   "dependencies": {
     "@arcjet/bun": "^1.6.1",
     "@better-auth/drizzle-adapter": "^1.4.0",
+    "@hono/standard-validator": "^0.2.3",
     "@scalar/hono-api-reference": "^0.10.12",
     "better-auth": "^1.4.0",
     "drizzle-orm": "^0.44.0",
